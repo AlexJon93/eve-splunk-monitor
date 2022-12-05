@@ -7,5 +7,7 @@ services:
     environment:
       - SPLUNK_START_ARGS=--accept-license
       - SPLUNK_PASSWORD=${SPLUNK_PASS}
+    volumes:
+      - ./app:/opt/splunk/etc/apps/eve-online-monitor
     ports:
       - 8000:8000
