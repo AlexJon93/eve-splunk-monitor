@@ -37,25 +37,50 @@ class EveApiStream(Script):
         for input_name, input_item in inputs.inputs.items():
             endpoint = input_item["endpoint"]
             data = get_api_data(endpoint)
+            if data is None:
+                return
+
+            pages = data.headers.get('X-Pages')
             out = data.json()
 
             if isinstance(out, list):
-                for item in out:
-                    event = Event()
-                    event.sourceType = "eve_api"
-                    event.stanza = input_name
-                    event.data = json.dumps(item)
-                    ew.write_event(event)
+                write_item_list(ew, input_name, out)
             else:
-                event = Event()
-                event.sourceType = "eve_api"
-                event.stanza = input_name
-                event.data = json.dumps(out)
-                ew.write_event(event)
+                write_item(ew, input_name, out)
+
+
+            if pages is not None and int(pages) > 1:
+                for page in range(2, int(pages)):
+                    paged_endpoint = f'{endpoint}?page={page}'
+                    data = get_api_data(paged_endpoint)
+                    if data is None:
+                        return
+                    out = data.json()
+                    write_item_list(ew, input_name, out)
+
 
 def get_api_data(endpoint):
-    response = requests.get(ESI_BASE_URL + endpoint)
-    return response
+    res = requests.get(ESI_BASE_URL + endpoint)
+    if res.status_code >= 300:
+        logging.error(f'request to {endpoint} returned non-200 status: {res.status_code}')
+        return None
+    return res
+
+
+def write_item_list(ew: EventWriter, input_name, items):
+    if not isinstance(items, list):
+        logging.error(f'Item received is not a list')
+        return
+
+    for item in items:
+        write_item(ew, input_name, item)
+
+def write_item(ew: EventWriter, input_name, item):
+    event = Event()
+    event.sourceType = "eve_api"
+    event.stanza = input_name
+    event.data = json.dumps(item)
+    ew.write_event(event)
     
 
 if __name__ == "__main__":
