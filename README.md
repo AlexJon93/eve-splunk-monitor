@@ -2,7 +2,7 @@
 ### Helpful Splunk App designed to show current EVE Online Market data
 
 Issues in development:
-- Docker deve environment permission issues
+- Docker dev environment permission issues
 - SSO Authentication
 - Paginated Data
 - Learning the Splexicon
